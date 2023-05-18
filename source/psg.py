@@ -1,8 +1,9 @@
-from psg_sky import PSG_sky as Sky
-from psg_plot import PSG_Plot as Plot
-from psg_model import PSG_model as Model
-from psg_lms import PSG_lms as Lms
+from psgsky import PsgSky as Sky
+from psgplot import PsgPlot as Plot
+from psgmodel import PsgModel as Model
+from psglms import PsgLms as Lms
 from psgglobals import PsgGlobals as Globals
+import numpy as np
 
 if __name__ == "__main__":
     print('psg starting')
@@ -24,12 +25,23 @@ if __name__ == "__main__":
     # Load sky transmission and emission spectra
     sky = Sky()
     sky.load_spectra()
+    w_sky = sky.trans_spectrum.waves
+    n_w = w_sky.shape[0]
+    w_idx = 2.7 + 0.0000135 * np.arange(0, n_w, 1, dtype='int')
+    dw = 1E7 * (w_sky - w_idx)
 
     run_psg = True
     if run_psg:
+        # Adjust the model wavelength range to align with the sky spectrum.
+        sky_waves = sky.trans_spectrum.waves
+        sky_hi_indices = np.where(sky_waves > model_wave_range[1])
+        sky_lo_indices = np.where(sky_waves < model_wave_range[0])
+        lo_idx, hi_idx = sky_lo_indices[0][-1], sky_hi_indices[0][0]
+        mod_wav_lo, mod_wav_hi = sky_waves[lo_idx], sky_waves[hi_idx]
+
         base_config_file = 'ross458c_config.txt'
-        kwargs = {'wave1': "{:.9f}".format(model_wave_range[0]),     # PSG first point is at wave1 + dw..
-                  'wave2': "{:.9f}".format(model_wave_range[1]),
+        kwargs = {'wave1': "{:.9f}".format(mod_wav_lo),     # PSG first point is at wave1 + dw..
+                  'wave2': "{:.9f}".format(mod_wav_hi),
                   'spec_res': "{:.7f}".format(spec_res),
                   'v_obs': "{:.2f}".format(v_obs)
                   }

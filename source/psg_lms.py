@@ -1,7 +1,7 @@
 import math
 import numpy as np
 from numpy import random
-from psg_spectrum import PSG_spectrum as Spectrum
+from psgspectrum import PsgSpectrum as Spectrum
 
 
 class PSG_lms:
@@ -17,7 +17,6 @@ class PSG_lms:
                                     [16, 7.], [32, 5.6], [64, 5.],
                                     [128, 5.], [256, 5.6], [512, 6.4],
                                     [1024, 8.], [2048, 10.6]])
-
 
     def __init__(self):
         return

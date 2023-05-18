@@ -1,7 +1,7 @@
 import astropy
 import numpy as np
 from astropy.io import fits
-from psg_spectrum import PSG_spectrum as Spectrum
+from psgspectrum import PsgSpectrum as Spectrum
 
 class PSG_sky:
 

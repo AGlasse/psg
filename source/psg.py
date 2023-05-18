@@ -2,7 +2,7 @@ from psg_sky import PSG_sky as Sky
 from psg_plot import PSG_Plot as Plot
 from psg_model import PSG_model as Model
 from psg_lms import PSG_lms as Lms
-from psg_globals import PSG_globals as Globals
+from psgglobals import PsgGlobals as Globals
 
 if __name__ == "__main__":
     print('psg starting')
@@ -13,12 +13,12 @@ if __name__ == "__main__":
 
     # Define PSG model parameters
     reference_wavelength = 2.7
-    srp = 2000                        # SRP at reference wavelength, with dw = wave_range[0] / srp (nom 200,000)
+    srp = 200000                        # SRP at reference wavelength, with dw = wave_range[0] / srp (nom 200,000)
     spec_res = reference_wavelength / srp
-    model_wave_range = [2.5, 5.7]       # Extract limited range in a single run (to avoid truncation by PSG)
-    v_obs = 650.                        # System velocity km/sec
+    model_wave_range = [3.0, 3.2]       # Extract limited range in a single run (to avoid truncation by PSG)
+    v_obs = 0.                          # System velocity km/sec
 
-    plot_wave_range = [2.50, 5.7]
+    plot_wave_range = [3.00, 3.05]
     plot.set_wave_range(plot_wave_range)
 
     # Load sky transmission and emission spectra

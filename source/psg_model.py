@@ -3,8 +3,8 @@ import pickle
 import os
 import shutil
 import numpy as np
-from psg_globals import PSG_globals as Globals
-from psg_spectrum import PSG_spectrum as Spectrum
+from psgglobals import PsgGlobals as Globals
+from psgspectrum import PsgSpectrum as Spectrum
 
 
 class PSG_model:

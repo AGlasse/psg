@@ -46,7 +46,7 @@ class PsgPlot:
             rps = np.atleast_2d(remplots)
             for i in range(0, len(rps)):
                 ax_list[rps[i, 0], rps[i, 1]].remove()
-        return fig, ax_list
+        return fig, plt, ax_list
 
     @staticmethod
     def set_wave_range(wave_range):
@@ -58,6 +58,7 @@ class PsgPlot:
 
         title = kwargs.get('title', '')
         png_path = kwargs.get('png_path', None)
+        colours = kwargs.get('colours', None)
         plot_errors = kwargs.get('plot_errors', [False]*len(spectra))
         plot_points = kwargs.get('plot_points', False)
         ls = kwargs.get('ls', 'none')
@@ -67,13 +68,15 @@ class PsgPlot:
 
         fig, ax = plt.subplots(1, 1, figsize=(10, 8))
         ax.set_title(title)
-        waves= spectra[0].waves
+        waves = spectra[0].waves
         wlim = kwargs.get('wlim', PsgPlot.wave_range)
         ax.set_xlim(wlim)
-        # Get (Y) plot limits
+        # Get (Y) plot limits within selected wavelength limits
         ylim = [sys.float_info.max, sys.float_info.min]
+        indices = np.argwhere(np.logical_and(waves > wlim[0], waves < wlim[1]))
+        idxmin, idxmax = indices[0, 0], indices[-1, 0]
         for spectrum in spectra:
-            vals = spectrum.vals
+            vals = spectrum.vals[idxmin:idxmax]
             ymin, ymax = np.amin(vals), np.amax(vals)
             ylim[0] = ymin if ymin < ylim[0] else ylim[0]
             ylim[1] = ymax if ymax > ylim[1] else ylim[1]
@@ -85,28 +88,24 @@ class PsgPlot:
         ax.set_ylim(ylim)
 
         for i, spectrum in enumerate(spectra):
-            waves, vals, val_errs, units, label, colour = spectrum.get()
+            waves, vals, val_errs, units, label, spec_colour = spectrum.get()
+            color = spec_colour if colours is None else colours[i]
+
             ax.set_xlabel(xlabel, fontsize=16.0)
             ax.set_ylabel(ylabel, fontsize=16.0)
-            for tick in ax.yaxis.get_major_ticks():
-                tick.label.set_fontsize(16.0)
-            for tick in ax.xaxis.get_major_ticks():
-                tick.label.set_fontsize(16.0)
 
             fillstyle = 'full' if plot_points else 'none'
-            marker = 'o' if plot_points else 'none'
-            label = label + ' ' + units
+            marker = '|' if plot_points else 'none'
             key_words = {'marker': marker, 'ms': 10., 'mew': 2.0, 'fillstyle': fillstyle,
-                         'label': label, 'color': colour}
+                         'label': label, 'color': color}
             ax.plot(waves, vals, **key_words)
             if plot_errors[i]:
                 if plot_points:
                     ax.ploterrors(waves, vals, yerr=val_errs)
                 else:
-                    key_words = {'marker': marker, 'ms': 10., 'mew': 2.0, 'fillstyle': fillstyle,
-                                 'label': label, 'color': colour}
+                    key_words = {'marker': marker, 'ms': 1., 'mew': 2.0, 'fillstyle': fillstyle,
+                                 'label': label, 'color': color}
                     ax.fill_between(waves, vals - val_errs, vals + val_errs, alpha=0.5)
-#                    ax.plot(waves, vals - val_errs, **key_words)
 
         plt.legend()
         if png_path is not None:

@@ -13,7 +13,7 @@ class PsgSpectrum:
             return
         # Create default parameters
         self.waves, self.vals, self.val_errs = np.zeros(2), np.array([1., 1.]), np.array([.1, .1])
-        self.units, self.label, self.colour =  '-', 'default', 'black'
+        self.units, self.label, self.colour = '-', 'default', 'black'
         if n_args > 3:
             self.waves, self.vals, self.units = args[0], args[1], args[3]
             self.val_errs = np.zeros(self.vals.shape) if args[2] is None else args[2]
@@ -25,7 +25,7 @@ class PsgSpectrum:
         return self.waves, self.vals, self.val_errs, self.units, self.label, self.colour
 
     def set(self, waves, vals, val_errs, units, label, colour):
-        self.waves, self.vals, self.val_errs, self.units = waves, vals, val_err, units
+        self.waves, self.vals, self.val_errs, self.units = waves, vals, val_errs, units
         self.label, self.colour = label, colour
         return
 

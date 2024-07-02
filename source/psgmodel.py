@@ -16,11 +16,11 @@ class PsgModel:
         return
 
     @staticmethod
-    def make_run_config_file(base_config_file, **kwargs):
+    def make_run_config_file(base_config_file_name, **kwargs):
         """ PSG generates a model with delta-wave = wave1 / srp.  However, the spectrum starts at wave1 + delta-wave
         and only the first 1 or 2 (?) decimal places of wave1/2 are read, so we .
-        so we """
-
+        so we
+        """
         wave1 = kwargs.get('wave1', '2.7')
         wave2 = kwargs.get('wave2', '2.9')
         spec_res = kwargs.get('spec_res', '0.0000135')
@@ -37,12 +37,13 @@ class PsgModel:
                          }
 
         data_dir = Globals.data_dir
-        config_file = PsgModel.run_config_file
-        config_path = data_dir + PsgModel.run_config_file
-        os.chdir(data_dir)
-        shutil.copy(base_config_file, config_file)
+        # config_file_path = PsgModel.run_config_file
+        # config_path = data_dir + PsgModel.run_config_file
+        base_config_path = data_dir + base_config_file_name
+        run_config_path = data_dir + PsgModel.run_config_file
+        shutil.copy(base_config_path, run_config_path)
         new_lines = []
-        with open(config_path, 'r') as file:
+        with open(run_config_path, 'r') as file:
             lines = file.readlines()
             for line in lines:
                 new_line = line
@@ -53,63 +54,64 @@ class PsgModel:
                 new_lines.append(new_line)
         file.close()
 
-        os.remove(config_path)
-        with open(config_path, 'w') as file:
+        os.remove(run_config_path)
+        with open(run_config_path, 'w') as file:
             for new_line in new_lines:
                 file.write(new_line)
         file.close()
-        os.chdir('../source')
         return
 
     @staticmethod
     def run_model():
-        config_path = Globals.data_dir + 'config.txt'
-        os.chdir('../data')
+        """ Run PSG and save spectrum to pickle file, labelled using v_obs.
+        """
+        os.chdir('./psg_in')
         curl_command = 'curl --data-urlencode file@config.txt https://psg.gsfc.nasa.gov/api.php'
         process = subprocess.Popen(curl_command.split(), stdout=subprocess.PIPE)
         output, error = process.communicate()
-        data = output.decode('utf-8')
-        pickle_path = '../output/pickle.pkl'
+        os.chdir('..')
+        text_block = output.decode('utf-8')
+        wav_list, rad_list, rad_err_list = [], [], []
+        lines = text_block.split('\n')
+        for line in lines:
+            tokens = line.split(' ')
+            if '#' in tokens[0]:
+                continue
+            if len(tokens) < 2:
+                break
+            # print(tokens)
+            wav, stellar, exo = float(tokens[0]), float(tokens[4]), float(tokens[6])
+            wav_list.append(wav)
+            rad_list.append(exo)
+            rad_err_list.append(0.)
+
+        waves, vals, val_errs = np.array(wav_list), np.array(rad_list), np.array(rad_err_list)
+        units = 'Wsrm2um'
+        label = 'Exoplanet'
+        colour = 'magenta'
+        rad_spec = Spectrum(waves, vals, val_errs, units, label, colour)
+        return rad_spec
+
+    @staticmethod
+    def store_spectrum(spectrum, v_obs):
+        pickle_path = PsgModel._make_pickle_path(v_obs)
         file = open(pickle_path, 'wb')
-        pickle.dump(data, file)
+        pickle.dump(spectrum, file)
         file.close()
-        os.chdir('../source')
         return
 
     @staticmethod
-    def load_spectrum(pickle_path, **kwargs):
-        lms = kwargs.get('lms', None)
-        rad_spectrum = PsgModel._load_pickle(pickle_path)
-        flux_spectrum = Globals.convert_radiance_to_flux(rad_spectrum)
-        PsgModel.rad_spectrum, PsgModel.flux_spectrum = rad_spectrum, flux_spectrum
-        print("Loaded model spectra with units of {:s}".format(rad_spectrum.units))
-        return rad_spectrum
+    def load_spectrum(v_obs, **kwargs):
+        pickle_path = PsgModel._make_pickle_path(v_obs)
+        file = open(pickle_path, 'rb')
+        spectrum = pickle.load(file)
+        file.close()
+        print("Loaded model spectrum with units of {:s}".format(spectrum.units))
+        return spectrum
 
     @staticmethod
-    def _load_pickle(pickle_path):
-        file = open(pickle_path, 'rb')
-        data = pickle.load(file)
-        file.close()
-
-        # Parse data file
-        wav_list, rad_list, rad_err_list = [], [], []
-        records = data.split('\n')
-        print("Model flux units = {:s}".format(records[11]))
-        for record in records[14:]:
-            if len(record) < 2:
-                continue
-#            print(record)
-            tokens = record.split(' ')
-            floats = []
-            for token in tokens:
-                if len(token) > 2:
-                    floats.append(float(token))
-            wav, rad = floats[0], floats[1]
-            wav_list.append(wav)
-            rad_list.append(rad)
-            rad_err_list.append(0.)
-        rad_units = 'W/sr/m2/um'
-        print("Loaded model radiance spectrum with units {:s}".format(rad_units))
-        spectrum = Spectrum(np.array(wav_list), np.array(rad_list), np.array(rad_err_list), rad_units,
-                            'Radiance', 'orange')
-        return spectrum
+    def _make_pickle_path(v_obs):
+        v_mps = int(1000. * v_obs)
+        pickle_file_name = "pickle_v_{:06d}_mps".format(v_mps)       # Encode filename with v_obs in metre/sec
+        pickle_path = './psg_out/' + pickle_file_name
+        return pickle_path

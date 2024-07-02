@@ -1,4 +1,3 @@
-import sys
 import math
 import numpy as np
 from psgspectrum import PsgSpectrum as Spectrum
@@ -6,8 +5,8 @@ from psgspectrum import PsgSpectrum as Spectrum
 
 class PsgGlobals:
 
-    data_dir, output_dir = '../data/', '../output/'
-
+    data_dir = './psg_in/'
+    psg_out_folder = './psg_out/'
 
     def __init__(self):
         return
@@ -26,18 +25,18 @@ class PsgGlobals:
 
     @staticmethod
     def convert_radiance_to_flux(radiance_spectrum):
-        """ Convert a spectrum from sky flux units (ph/s/m2/um/arcsec2 to PSG units watt/m2/sr/micron)
+        """ Convert a spectrum from radiance (PSG) units, watt/m2/sr/micron, to 'flux' units ph/s/m2/um/arcsec2
         """
-        wav, radiance, radiance_error, radiance_units, label, colour = radiance_spectrum.get()
+        waves, radiance, radiance_error, radiance_units, label, colour = radiance_spectrum.get()
         arcsec_steradian = 4.2545166E10
         h_planck = 6.6260693E-34
         c_light = 2.99792458E14
-        joule_ph = h_planck * c_light / wav
+        joule_ph = h_planck * c_light / waves
         k = 1. / (joule_ph * arcsec_steradian)
         flux = k * radiance
         flux_error = k * radiance_error
         label = 'Flux'
-        flux_spectrum = Spectrum(wav, flux, flux_error, 'ph/s/m2/um/arcsec2', label, colour)
+        flux_spectrum = Spectrum(waves, flux, flux_error, 'ph/s/m2/um/arcsec2', label, colour)
         return flux_spectrum
 
     @staticmethod

@@ -23,9 +23,9 @@ if __name__ == "__main__":
 
     model_wave_range = [3.10, 3.25]          # Extract limited range in a single run (to avoid truncation by PSG)
     v_obs = 0.                              # System velocity km/sec
-    v_obs_list = [0., 0.005, 5.000]         # Velocity shift in km/sec
+    v_obs_list = [0., 5., 50., 500.]         # Velocity shift in km/sec
 
-    run_psg = True
+    run_psg = False
     if run_psg:
         for v_obs in v_obs_list:
             base_config_file_name = 'hd189733b_config.txt'    # 'ross458c_config.txt'
@@ -45,9 +45,9 @@ if __name__ == "__main__":
     obs_list = []
     for v_obs in v_obs_list:
 
+        exo_spec = model.load_spectrum(v_obs)
         # Load sky transmission and emission spectra and resample them onto the exo-planet model wavelength scale
         if sky is None:
-            exo_spec = model.load_spectrum(v_obs)
             title = "Noiseless target spectrum $\Delta$V = {:8.3f}".format(v_obs)
             plot.spectra([exo_spec], ymin=0., title=title)
 
@@ -55,7 +55,7 @@ if __name__ == "__main__":
             sky.load_spectra()
             w_sky = sky.trans_spectrum.waves
             model_waves = exo_spec.waves
-            sky.resample(model_waves)
+            sky.resample(model_waves)       # Resample the sky spectra onto the planet wavelength scale
             plot_sky = False
             if plot_sky:
                 plot.spectra([sky.trans_spectrum], title='Sky transmission')
@@ -63,7 +63,7 @@ if __name__ == "__main__":
 
         if ref_spec is None:
             ref_spec = exo_spec
-        do_dv_check = False
+        do_dv_check = True
         if do_dv_check:
             fig, plt, ax_list = plot.set_plot_area()
             ax = ax_list[0, 0]
@@ -81,7 +81,8 @@ if __name__ == "__main__":
         ideal_obs_spectrum = lms.detect(lms_tgt_spectrum, apply_noise=False)
         ideal_bgd_spectrum = lms.detect(lms_bgd_spectrum, apply_noise=False)
         ideal_tgt_spectrum = ideal_obs_spectrum.minus(ideal_bgd_spectrum)
-        det_tgt_spectrum = lms.detect(lms_tgt_spectrum, apply_noise=True)
+
+        det_tgt_spectrum = lms.detect(lms_tgt_spectrum, apply_noise=False)
         det_tgt_spectrum.colour = 'magenta'
         det_tgt_spectrum.label = 'target + bgd'
 
@@ -101,20 +102,21 @@ if __name__ == "__main__":
 
     ref_spec = obs_list[0]
     ref_spec.colour = 'green'
+    ref_spec.label = 'reference (v=0)'
     corr_spec_list = []
     for i, spec in enumerate(obs_list):
         colours = ['black', 'orange']
         v_obs = v_obs_list[i]
-        title = "Observation v reference, $\Delta$V = {:6.3f} km/s".format(v_obs)
+        title = "observation - reference, $\Delta$V = {:6.3f} km/s".format(v_obs)
         plot.spectra([spec, ref_spec],
                      plot_points=True, title=title)
         corr_spec, delta_v, corr_max = Correlate.cross_correlate(spec, ref_spec)
         print(delta_v, corr_max)
 
         corr_spec.colour = 'royalblue'
-        title = "Correlation, $\Delta$V = {:6.3f} km/s".format(v_obs)
-        plot.spectra([corr_spec], wlim=[-14900, 14900],
-                     plot_points=True, title=title)
+        # title = "Correlation, $\Delta$V = {:6.3f} km/s".format(v_obs)
+        # plot.spectra([corr_spec], wlim=[-14900, 14900],
+        #              plot_points=True, title=title)
         corr_spec_list.append(corr_spec)
 
     colours = ['black', 'orange', 'royalblue']
